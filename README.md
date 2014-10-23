@@ -7,8 +7,7 @@ Nginx module to provide client methods of MessagePack RPC
 
 Request to MessagePack RPC server using Nginx as MessagePack RPC client.
 
-When you need a MessagePack RPC client, you need only write the address
-and port number of a MessagePack RPC server to configure the nginx.
+When you need a MessagePack RPC client, your work will be finished if you write IP address and port number of a MessagePack RPC server to nginx.conf.
 
 There is no need to implement MessagePack RPC clients corresponding to new MessagePack RPC servers.
 
