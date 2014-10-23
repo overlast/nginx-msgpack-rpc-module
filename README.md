@@ -2,7 +2,7 @@ nginx-msgpack-rpc-module
 =======================
 
 Nginx module to provide client methods of MessagePack RPC
- +
+
 ## Motive
 
 Request to MessagePack RPC server using Nginx as MessagePack RPC client.
