@@ -20,6 +20,8 @@ limitations under the License.
 #include <ngx_core.h>
 #include <ngx_http.h>
 #include <ngx_string.h>
+#include <ngx_palloc.h>
+#include <ngx_http_variables.h>
 #include <msgpack_rpc_client.h>
 
 typedef struct {
@@ -76,7 +78,7 @@ static ngx_http_module_t  ngx_http_msgpack_rpc_client_module_ctx =
 };
 
 
-ngx_module_t  ngx_http_msgpack_rpc_client_module =
+ngx_module_t  ngx_http_msgpack_rpc_module =
 {
 
   NGX_MODULE_V1,
@@ -97,8 +99,7 @@ ngx_module_t  ngx_http_msgpack_rpc_client_module =
 static void* ngx_http_msgpack_rpc_client_create_loc_conf(ngx_conf_t *cf)
 {
   ngx_http_msgpack_rpc_client_loc_conf_t  *conf;
-
-  conf = ngx_pcalloc(cf->pool, sizeof(ngx_http_msgpack_rpc_client_loc_conf_t));
+  conf = (ngx_http_msgpack_rpc_client_loc_conf_t  *)ngx_pcalloc(cf->pool, sizeof(ngx_http_msgpack_rpc_client_loc_conf_t));
   if (conf == NULL) {
     return NGX_CONF_ERROR;
   }
@@ -299,7 +300,7 @@ ngx_http_msgpack_rpc_client_handler(ngx_http_request_t *r)
   ngx_chain_t   out;
   u_char *buff;
   u_char* client_res = NULL;
-  conf = ngx_http_get_module_loc_conf(r, ngx_http_msgpack_rpc_client_module);
+  conf = (ngx_http_msgpack_rpc_client_loc_conf_t *)ngx_http_get_module_loc_conf(r, ngx_http_msgpack_rpc_module);
   size_t client_res_len = 0;
   ngx_str_t** params = get_http_parameters(r, conf);
 
@@ -342,7 +343,7 @@ ngx_http_msgpack_rpc_client_handler(ngx_http_request_t *r)
   out.buf = b;
   out.next = NULL;
 
-  buff = ngx_palloc(r->pool, client_res_len);
+  buff = (u_char *)ngx_palloc(r->pool, client_res_len);
   ngx_snprintf(buff, client_res_len, "%s", client_res);
 
   b->pos = buff;
@@ -416,7 +417,7 @@ get_variable_param_indexes(ngx_conf_t *cf, ngx_uint_t *indexes) {
 static char *
 ngx_http_msgpack_rpc_client_call(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
-  ngx_http_msgpack_rpc_client_loc_conf_t  *mrclcf = conf;
+  ngx_http_msgpack_rpc_client_loc_conf_t  *mrclcf = (ngx_http_msgpack_rpc_client_loc_conf_t  *)conf;
   ngx_uint_t   args;
   ngx_str_t   *argv;
   u_char* request_type = (u_char*)"call";
@@ -425,7 +426,7 @@ ngx_http_msgpack_rpc_client_call(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
   ngx_int_t tmp_index = -1;
 
   args = cf->args->nelts;
-  argv = cf->args->elts;
+  argv = (ngx_str_t *)cf->args->elts;
 
   if (args == 4) {
     mrclcf->ip_address = &argv[1];
@@ -443,14 +444,14 @@ ngx_http_msgpack_rpc_client_call(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
       mrclcf->method_name = NULL;
       mrclcf->param_num = get_variable_param_indexes(cf, mrclcf->param_indexes);
     } else {
-      return NGX_CONF_ERROR;
+      //return "NGX_CONF_ERROR";
     }
   } else {
-    return NGX_CONF_ERROR;
+    //return "NGX_CONF_ERROR";
   }
 
   // location設定を取得しHandler設定
-  clcf = ngx_http_conf_get_module_loc_conf(cf, ngx_http_core_module);
+  clcf = (ngx_http_core_loc_conf_t  *)ngx_http_conf_get_module_loc_conf(cf, ngx_http_core_module);
   clcf->handler = ngx_http_msgpack_rpc_client_handler;
 
   return NGX_CONF_OK;
@@ -459,7 +460,7 @@ ngx_http_msgpack_rpc_client_call(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 static char *
 ngx_http_msgpack_rpc_client_notify(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
-  ngx_http_msgpack_rpc_client_loc_conf_t  *mrclcf = conf;
+  ngx_http_msgpack_rpc_client_loc_conf_t  *mrclcf = (ngx_http_msgpack_rpc_client_loc_conf_t *)conf;
   ngx_uint_t   args;
   ngx_str_t   *argv;
   u_char* request_type = (u_char*)"notify";
@@ -468,7 +469,7 @@ ngx_http_msgpack_rpc_client_notify(ngx_conf_t *cf, ngx_command_t *cmd, void *con
   ngx_int_t tmp_index = -1;
 
   args = cf->args->nelts;
-  argv = cf->args->elts;
+  argv = (ngx_str_t *)cf->args->elts;
 
   if (args == 4) {
     mrclcf->ip_address = &argv[1];
@@ -486,14 +487,14 @@ ngx_http_msgpack_rpc_client_notify(ngx_conf_t *cf, ngx_command_t *cmd, void *con
       mrclcf->method_name = NULL;
       mrclcf->param_num = get_variable_param_indexes(cf, mrclcf->param_indexes);
     } else {
-      return NGX_CONF_ERROR;
+      //return NGX_CONF_ERROR;
     }
   } else {
-    return NGX_CONF_ERROR;
+    //return NGX_CONF_ERROR;
   }
 
   // location設定を取得しHandler設定
-  clcf = ngx_http_conf_get_module_loc_conf(cf, ngx_http_core_module);
+  clcf = (ngx_http_core_loc_conf_t  *)ngx_http_conf_get_module_loc_conf(cf, ngx_http_core_module);
   clcf->handler = ngx_http_msgpack_rpc_client_handler;
 
   return NGX_CONF_OK;
