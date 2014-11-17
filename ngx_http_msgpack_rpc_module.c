@@ -196,18 +196,19 @@ ngx_str_t* get_ngx_str_t_with_r(ngx_http_request_t *r, u_char* str) {
   return res;
 }
 
-ngx_str_t** get_http_parameters(ngx_http_request_t *r, ngx_http_msgpack_rpc_client_loc_conf_t *conf) {
+u_char** get_http_parameters(ngx_http_request_t *r, ngx_http_msgpack_rpc_client_loc_conf_t *conf) {
   ngx_int_t max_index_num = 16;
-  ngx_str_t** params = NULL;
+  u_char** params = NULL;
   ngx_int_t i = 0;
   ngx_http_variable_value_t  *vvalue_method_name;
   ngx_http_variable_value_t  *vvalue_param;
   ngx_str_t *tmp_ngx_str;
+  ngx_str_t *tmp_param;
   ngx_uint_t tmp_key_hash = 0;
   ngx_int_t request_type_len = 10;
   u_char* request_type = (u_char *)ngx_pcalloc(r->pool, sizeof(u_char) * request_type_len);
-
-  params = (ngx_str_t**)ngx_pcalloc(r->pool, sizeof(ngx_str_t*) * (max_index_num + 1));
+  params = (u_char**)ngx_pcalloc(r->pool, sizeof(u_char*) * (max_index_num + 1));
+  //params = (ngx_str_t**)ngx_pcalloc(r->pool, sizeof(ngx_str_t*) * (max_index_num + 1));
   ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "testt%s", conf->method_name);
 
   if (conf->method_name == NULL) {
@@ -223,155 +224,167 @@ ngx_str_t** get_http_parameters(ngx_http_request_t *r, ngx_http_msgpack_rpc_clie
       tmp_ngx_str = get_ngx_str_t_with_r(r, request_type);
       tmp_key_hash = ngx_hash_key(tmp_ngx_str->data, tmp_ngx_str->len);
       vvalue_param = ngx_http_get_variable(r, tmp_ngx_str, tmp_key_hash);
-      params[i] = variable_value_to_ngx_str_t(r, vvalue_param);
-      if (params[i] == NULL) {
+      tmp_param = variable_value_to_ngx_str_t(r, vvalue_param);
+      if (tmp_param == NULL) {
         conf->param_num = i - 1;
         break;
       }
-    }
-    if (params[max_index_num] != NULL) {
-      conf->param_num = max_index_num;
+      params[i] = ngx_pstrdup(r->pool, tmp_param);
+      conf->param_num = i;
     }
   }
   return params;
 }
 
-const char* get_mrc_call_responce(ngx_http_msgpack_rpc_client_loc_conf_t *conf, ngx_str_t** params) {
-  mrclient* client = mrc_create((char *)conf->ip_address->data, (int)(ngx_atoi(conf->port_number->data, conf->port_number->len)));
+mrclient* get_mrc_client(ngx_http_request_t *r, ngx_http_msgpack_rpc_client_loc_conf_t *conf) {
+  mrclient* client;
+  u_char* ip = ngx_pstrdup(r->pool, conf->ip_address);
+  u_char* port = ngx_pstrdup(r->pool, conf->port_number);
+  ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "testport_in_mrc:%s", port);
+  ngx_int_t port_num = ngx_atoi(port, ngx_strlen(port));
+  client = mrc_create((char *)ip, port_num);
+  return client;
+}
+
+
+const char* get_mrc_call_responce(ngx_http_request_t *r, ngx_http_msgpack_rpc_client_loc_conf_t *conf, u_char** params) {
+  mrclient* client = get_mrc_client(r, conf);
+  u_char* method_name = ngx_pstrdup(r->pool, conf->method_name);
   const char* res;
   switch (conf->param_num) {
     case 0:
-      res = mrc_call(client, (char *)(conf->method_name->data));
+      res = mrc_call(client, (char *)method_name);
       break;
     case 1:
-      res = mrc_call(client, (char *)(conf->method_name->data), (char *)(params[1]->data));
+      res = mrc_call(client, (char *)method_name, (char *)params[1]);
       break;
     case 2:
-      res = mrc_call(client, (char *)(conf->method_name->data), (char *)(params[1]->data), (char *)(params[2]->data));
+      res = mrc_call(client, (char *)method_name, (char *)params[1], (char *)params[2]);
       break;
     case 3:
-      res = mrc_call(client, (char *)(conf->method_name->data), (char *)(params[1]->data), (char *)(params[2]->data), (char *)(params[3]->data));
+      res = mrc_call(client, (char *)method_name, (char *)params[1], (char *)params[2], (char *)params[3]);
       break;
     case 4:
-      res = mrc_call(client, (char *)(conf->method_name->data), (char *)(params[1]->data), (char *)(params[2]->data), (char *)(params[3]->data), (char *)(params[4]->data));
+      res = mrc_call(client, (char *)method_name, (char *)params[1], (char *)params[2], (char *)params[3], (char *)params[4]);
       break;
     case 5:
-      res = mrc_call(client, (char *)(conf->method_name->data), (char *)(params[1]->data), (char *)(params[2]->data), (char *)(params[3]->data), (char *)(params[4]->data), (char *)(params[5]->data));
+      res = mrc_call(client, (char *)method_name, (char *)params[1], (char *)params[2], (char *)params[3], (char *)params[4], (char *)params[5]);
       break;
     case 6:
-      res = mrc_call(client, (char *)(conf->method_name->data), (char *)(params[1]->data), (char *)(params[2]->data), (char *)(params[3]->data), (char *)(params[4]->data), (char *)(params[5]->data), (char *)(params[6]->data));
+      res = mrc_call(client, (char *)method_name, (char *)params[1], (char *)params[2], (char *)params[3], (char *)params[4], (char *)params[5], (char *)params[6]);
       break;
     case 7:
-      res = mrc_call(client, (char *)(conf->method_name->data), (char *)(params[1]->data), (char *)(params[2]->data), (char *)(params[3]->data), (char *)(params[4]->data), (char *)(params[5]->data), (char *)(params[6]->data), (char *)(params[7]->data));
+      res = mrc_call(client, (char *)method_name, (char *)params[1], (char *)params[2], (char *)params[3], (char *)params[4], (char *)params[5], (char *)params[6], (char *)params[7]);
       break;
     case 8:
-      res = mrc_call(client, (char *)(conf->method_name->data), (char *)(params[1]->data), (char *)(params[2]->data), (char *)(params[3]->data), (char *)(params[4]->data), (char *)(params[5]->data), (char *)(params[6]->data), (char *)(params[7]->data), (char *)(params[8]->data));
+      res = mrc_call(client, (char *)method_name, (char *)params[1], (char *)params[2], (char *)params[3], (char *)params[4], (char *)params[5], (char *)params[6], (char *)params[7], (char *)params[8]);
       break;
     case 9:
-      res = mrc_call(client, (char *)(conf->method_name->data), (char *)(params[1]->data), (char *)(params[2]->data), (char *)(params[3]->data), (char *)(params[4]->data), (char *)(params[5]->data), (char *)(params[6]->data), (char *)(params[7]->data), (char *)(params[8]->data), (char *)(params[9]->data));
+      res = mrc_call(client, (char *)method_name, (char *)params[1], (char *)params[2], (char *)params[3], (char *)params[4], (char *)params[5], (char *)params[6], (char *)params[7], (char *)params[8], (char *)params[9]);
       break;
     case 10:
-      res = mrc_call(client, (char *)(conf->method_name->data), (char *)(params[1]->data), (char *)(params[2]->data), (char *)(params[3]->data), (char *)(params[4]->data), (char *)(params[5]->data), (char *)(params[6]->data), (char *)(params[7]->data), (char *)(params[8]->data), (char *)(params[9]->data), (char *)(params[10]->data));
+      res = mrc_call(client, (char *)method_name, (char *)params[1], (char *)params[2], (char *)params[3], (char *)params[4], (char *)params[5], (char *)params[6], (char *)params[7], (char *)params[8], (char *)params[9], (char *)params[10]);
       break;
     case 11:
-      res = mrc_call(client, (char *)(conf->method_name->data), (char *)(params[1]->data), (char *)(params[2]->data), (char *)(params[3]->data), (char *)(params[4]->data), (char *)(params[5]->data), (char *)(params[6]->data), (char *)(params[7]->data), (char *)(params[8]->data), (char *)(params[9]->data), (char *)(params[10]->data), (char *)(params[11]->data));
+      res = mrc_call(client, (char *)method_name, (char *)params[1], (char *)params[2], (char *)params[3], (char *)params[4], (char *)params[5], (char *)params[6], (char *)params[7], (char *)params[8], (char *)params[9], (char *)params[10], (char *)params[11]);
       break;
     case 12:
-      res = mrc_call(client, (char *)(conf->method_name->data), (char *)(params[1]->data), (char *)(params[2]->data), (char *)(params[3]->data), (char *)(params[4]->data), (char *)(params[5]->data), (char *)(params[6]->data), (char *)(params[7]->data), (char *)(params[8]->data), (char *)(params[9]->data), (char *)(params[10]->data), (char *)(params[11]->data), (char *)(params[12]->data));
+      res = mrc_call(client, (char *)method_name, (char *)params[1], (char *)params[2], (char *)params[3], (char *)params[4], (char *)params[5], (char *)params[6], (char *)params[7], (char *)params[8], (char *)params[9], (char *)params[10], (char *)params[11], (char *)params[12]);
       break;
     case 13:
-      res = mrc_call(client, (char *)(conf->method_name->data), (char *)(params[1]->data), (char *)(params[2]->data), (char *)(params[3]->data), (char *)(params[4]->data), (char *)(params[5]->data), (char *)(params[6]->data), (char *)(params[7]->data), (char *)(params[8]->data), (char *)(params[9]->data), (char *)(params[10]->data), (char *)(params[11]->data), (char *)(params[12]->data), (char *)(params[13]->data));
+      res = mrc_call(client, (char *)method_name, (char *)params[1], (char *)params[2], (char *)params[3], (char *)params[4], (char *)params[5], (char *)params[6], (char *)params[7], (char *)params[8], (char *)params[9], (char *)params[10], (char *)params[11], (char *)params[12], (char *)params[13]);
       break;
     case 14:
-      res = mrc_call(client, (char *)(conf->method_name->data), (char *)(params[1]->data), (char *)(params[2]->data), (char *)(params[3]->data), (char *)(params[4]->data), (char *)(params[5]->data), (char *)(params[6]->data), (char *)(params[7]->data), (char *)(params[8]->data), (char *)(params[9]->data), (char *)(params[10]->data), (char *)(params[11]->data), (char *)(params[12]->data), (char *)(params[13]->data), (char *)(params[14]->data));
+      res = mrc_call(client, (char *)method_name, (char *)params[1], (char *)params[2], (char *)params[3], (char *)params[4], (char *)params[5], (char *)params[6], (char *)params[7], (char *)params[8], (char *)params[9], (char *)params[10], (char *)params[11], (char *)params[12], (char *)params[13], (char *)params[14]);
       break;
     case 15:
-      res = mrc_call(client, (char *)(conf->method_name->data), (char *)(params[1]->data), (char *)(params[2]->data), (char *)(params[3]->data), (char *)(params[4]->data), (char *)(params[5]->data), (char *)(params[6]->data), (char *)(params[7]->data), (char *)(params[8]->data), (char *)(params[9]->data), (char *)(params[10]->data), (char *)(params[11]->data), (char *)(params[12]->data), (char *)(params[13]->data), (char *)(params[14]->data), (char *)(params[15]->data));
+      res = mrc_call(client, (char *)method_name, (char *)params[1], (char *)params[2], (char *)params[3], (char *)params[4], (char *)params[5], (char *)params[6], (char *)params[7], (char *)params[8], (char *)params[9], (char *)params[10], (char *)params[11], (char *)params[12], (char *)params[13], (char *)params[14], (char *)params[15]);
       break;
     case 16:
-      res = mrc_call(client, (char *)(conf->method_name->data), (char *)(params[1]->data), (char *)(params[2]->data), (char *)(params[3]->data), (char *)(params[4]->data), (char *)(params[5]->data), (char *)(params[6]->data), (char *)(params[7]->data), (char *)(params[8]->data), (char *)(params[9]->data), (char *)(params[10]->data), (char *)(params[11]->data), (char *)(params[12]->data), (char *)(params[13]->data), (char *)(params[14]->data), (char *)(params[15]->data), (char *)(params[16]->data));
+      res = mrc_call(client, (char *)method_name, (char *)params[1], (char *)params[2], (char *)params[3], (char *)params[4], (char *)params[5], (char *)params[6], (char *)params[7], (char *)params[8], (char *)params[9], (char *)params[10], (char *)params[11], (char *)params[12], (char *)params[13], (char *)params[14], (char *)params[15], (char *)params[16]);
       break;
     default:
-      res = mrc_call(client, (char *)(conf->method_name->data));
+      res = mrc_call(client, (char *)method_name);
       break;
   }
   return res;
 }
 
-ngx_int_t get_mrc_notify_responce(ngx_http_msgpack_rpc_client_loc_conf_t *conf, ngx_str_t** params) {
-  mrclient* client = mrc_create((char *)conf->ip_address->data, (int)(ngx_atoi(conf->port_number->data, conf->port_number->len)));
+ngx_int_t get_mrc_notify_responce(ngx_http_request_t *r, ngx_http_msgpack_rpc_client_loc_conf_t *conf, u_char** params) {
+  mrclient* client = get_mrc_client(r, conf);
+  u_char* method_name = ngx_pstrdup(r->pool, conf->method_name);
   ngx_int_t res = 1;
   switch (conf->param_num) {
     case 0:
-      mrc_notify(client, (char *)(conf->method_name->data));
+      mrc_notify(client, (char *)method_name);
       res = 0;
       break;
     case 1:
-      mrc_notify(client, (char *)(conf->method_name->data), (char *)(params[1]->data));
+      mrc_notify(client, (char *)method_name, (char *)params[1]);
       res = 0;
       break;
     case 2:
-      mrc_notify(client, (char *)(conf->method_name->data), (char *)(params[1]->data), (char *)(params[2]->data));
+      mrc_notify(client, (char *)method_name, (char *)params[1], (char *)params[2]);
       res = 0;
       break;
     case 3:
-      mrc_notify(client, (char *)(conf->method_name->data), (char *)(params[1]->data), (char *)(params[2]->data), (char *)(params[3]->data));
+      mrc_notify(client, (char *)method_name, (char *)params[1], (char *)params[2], (char *)params[3]);
       res = 0;
       break;
     case 4:
-      mrc_notify(client, (char *)(conf->method_name->data), (char *)(params[1]->data), (char *)(params[2]->data), (char *)(params[3]->data), (char *)(params[4]->data));
+      mrc_notify(client, (char *)method_name, (char *)params[1], (char *)params[2], (char *)params[3], (char *)params[4]);
       res = 0;
       break;
     case 5:
-      mrc_notify(client, (char *)(conf->method_name->data), (char *)(params[1]->data), (char *)(params[2]->data), (char *)(params[3]->data), (char *)(params[4]->data), (char *)(params[5]->data));
+      mrc_notify(client, (char *)method_name, (char *)params[1], (char *)params[2], (char *)params[3], (char *)params[4], (char *)params[5]);
       res = 0;
       break;
     case 6:
-      mrc_notify(client, (char *)(conf->method_name->data), (char *)(params[1]->data), (char *)(params[2]->data), (char *)(params[3]->data), (char *)(params[4]->data), (char *)(params[5]->data), (char *)(params[6]->data));
+      mrc_notify(client, (char *)method_name, (char *)params[1], (char *)params[2], (char *)params[3], (char *)params[4], (char *)params[5], (char *)params[6]);
       res = 0;
       break;
     case 7:
-      mrc_notify(client, (char *)(conf->method_name->data), (char *)(params[1]->data), (char *)(params[2]->data), (char *)(params[3]->data), (char *)(params[4]->data), (char *)(params[5]->data), (char *)(params[6]->data), (char *)(params[7]->data));
+      mrc_notify(client, (char *)method_name, (char *)params[1], (char *)params[2], (char *)params[3], (char *)params[4], (char *)params[5], (char *)params[6], (char *)params[7]);
       res = 0;
       break;
     case 8:
-      mrc_notify(client, (char *)(conf->method_name->data), (char *)(params[1]->data), (char *)(params[2]->data), (char *)(params[3]->data), (char *)(params[4]->data), (char *)(params[5]->data), (char *)(params[6]->data), (char *)(params[7]->data), (char *)(params[8]->data));
+      mrc_notify(client, (char *)method_name, (char *)params[1], (char *)params[2], (char *)params[3], (char *)params[4], (char *)params[5], (char *)params[6], (char *)params[7], (char *)params[8]);
       res = 0;
       break;
     case 9:
-      mrc_notify(client, (char *)(conf->method_name->data), (char *)(params[1]->data), (char *)(params[2]->data), (char *)(params[3]->data), (char *)(params[4]->data), (char *)(params[5]->data), (char *)(params[6]->data), (char *)(params[7]->data), (char *)(params[8]->data), (char *)(params[9]->data));
+      mrc_notify(client, (char *)method_name, (char *)params[1], (char *)params[2], (char *)params[3], (char *)params[4], (char *)params[5], (char *)params[6], (char *)params[7], (char *)params[8], (char *)params[9]);
       res = 0;
       break;
     case 10:
-      mrc_notify(client, (char *)(conf->method_name->data), (char *)(params[1]->data), (char *)(params[2]->data), (char *)(params[3]->data), (char *)(params[4]->data), (char *)(params[5]->data), (char *)(params[6]->data), (char *)(params[7]->data), (char *)(params[8]->data), (char *)(params[9]->data), (char *)(params[10]->data));
+      mrc_notify(client, (char *)method_name, (char *)params[1], (char *)params[2], (char *)params[3], (char *)params[4], (char *)params[5], (char *)params[6], (char *)params[7], (char *)params[8], (char *)params[9], (char *)params[10]);
       res = 0;
       break;
     case 11:
-      mrc_notify(client, (char *)(conf->method_name->data), (char *)(params[1]->data), (char *)(params[2]->data), (char *)(params[3]->data), (char *)(params[4]->data), (char *)(params[5]->data), (char *)(params[6]->data), (char *)(params[7]->data), (char *)(params[8]->data), (char *)(params[9]->data), (char *)(params[10]->data), (char *)(params[11]->data));
+      mrc_notify(client, (char *)method_name, (char *)params[1], (char *)params[2], (char *)params[3], (char *)params[4], (char *)params[5], (char *)params[6], (char *)params[7], (char *)params[8], (char *)params[9], (char *)params[10], (char *)params[11]);
       res = 0;
       break;
     case 12:
-      mrc_notify(client, (char *)(conf->method_name->data), (char *)(params[1]->data), (char *)(params[2]->data), (char *)(params[3]->data), (char *)(params[4]->data), (char *)(params[5]->data), (char *)(params[6]->data), (char *)(params[7]->data), (char *)(params[8]->data), (char *)(params[9]->data), (char *)(params[10]->data), (char *)(params[11]->data), (char *)(params[12]->data));
+      mrc_notify(client, (char *)method_name, (char *)params[1], (char *)params[2], (char *)params[3], (char *)params[4], (char *)params[5], (char *)params[6], (char *)params[7], (char *)params[8], (char *)params[9], (char *)params[10], (char *)params[11], (char *)params[12]);
       res = 0;
       break;
     case 13:
-      mrc_notify(client, (char *)(conf->method_name->data), (char *)(params[1]->data), (char *)(params[2]->data), (char *)(params[3]->data), (char *)(params[4]->data), (char *)(params[5]->data), (char *)(params[6]->data), (char *)(params[7]->data), (char *)(params[8]->data), (char *)(params[9]->data), (char *)(params[10]->data), (char *)(params[11]->data), (char *)(params[12]->data), (char *)(params[13]->data));
+      mrc_notify(client, (char *)method_name, (char *)params[1], (char *)params[2], (char *)params[3], (char *)params[4], (char *)params[5], (char *)params[6], (char *)params[7], (char *)params[8], (char *)params[9], (char *)params[10], (char *)params[11], (char *)params[12], (char *)params[13]);
       res = 0;
       break;
     case 14:
-      mrc_notify(client, (char *)(conf->method_name->data), (char *)(params[1]->data), (char *)(params[2]->data), (char *)(params[3]->data), (char *)(params[4]->data), (char *)(params[5]->data), (char *)(params[6]->data), (char *)(params[7]->data), (char *)(params[8]->data), (char *)(params[9]->data), (char *)(params[10]->data), (char *)(params[11]->data), (char *)(params[12]->data), (char *)(params[13]->data), (char *)(params[14]->data));
+      mrc_notify(client, (char *)method_name, (char *)params[1], (char *)params[2], (char *)params[3], (char *)params[4], (char *)params[5], (char *)params[6], (char *)params[7], (char *)params[8], (char *)params[9], (char *)params[10], (char *)params[11], (char *)params[12], (char *)params[13], (char *)params[14]);
       res = 0;
       break;
     case 15:
-      mrc_notify(client, (char *)(conf->method_name->data), (char *)(params[1]->data), (char *)(params[2]->data), (char *)(params[3]->data), (char *)(params[4]->data), (char *)(params[5]->data), (char *)(params[6]->data), (char *)(params[7]->data), (char *)(params[8]->data), (char *)(params[9]->data), (char *)(params[10]->data), (char *)(params[11]->data), (char *)(params[12]->data), (char *)(params[13]->data), (char *)(params[14]->data), (char *)(params[15]->data));
+      mrc_notify(client, (char *)method_name, (char *)params[1], (char *)params[2], (char *)params[3], (char *)params[4], (char *)params[5], (char *)params[6], (char *)params[7], (char *)params[8], (char *)params[9], (char *)params[10], (char *)params[11], (char *)params[12], (char *)params[13], (char *)params[14], (char *)params[15]);
       res = 0;
       break;
     case 16:
-      mrc_notify(client, (char *)(conf->method_name->data), (char *)(params[1]->data), (char *)(params[2]->data), (char *)(params[3]->data), (char *)(params[4]->data), (char *)(params[5]->data), (char *)(params[6]->data), (char *)(params[7]->data), (char *)(params[8]->data), (char *)(params[9]->data), (char *)(params[10]->data), (char *)(params[11]->data), (char *)(params[12]->data), (char *)(params[13]->data), (char *)(params[14]->data), (char *)(params[15]->data), (char *)(params[16]->data));
+      mrc_notify(client, (char *)method_name, (char *)params[1], (char *)params[2], (char *)params[3], (char *)params[4], (char *)params[5], (char *)params[6], (char *)params[7], (char *)params[8], (char *)params[9], (char *)params[10], (char *)params[11], (char *)params[12], (char *)params[13], (char *)params[14], (char *)params[15], (char *)params[16]);
       res = 0;
       break;
     default:
-      mrc_notify(client, (char *)(conf->method_name->data));
+      mrc_notify(client, (char *)method_name);
       res = 0;
       break;
   }
@@ -390,7 +403,7 @@ ngx_http_msgpack_rpc_client_handler(ngx_http_request_t *r)
   u_char* client_res = NULL;
   conf = (ngx_http_msgpack_rpc_client_loc_conf_t *)ngx_http_get_module_loc_conf(r, ngx_http_msgpack_rpc_module);
   size_t client_res_len = 0;
-  ngx_str_t** params;
+  u_char** params;
   ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "testip:%s", conf->ip_address->data);
   ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "testport:%s", conf->port_number->data);
   ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "testmethod_name:%s", conf->method_name->data);
@@ -398,10 +411,10 @@ ngx_http_msgpack_rpc_client_handler(ngx_http_request_t *r)
   ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "testreqest_type:%s", conf->request_type->data);
   params = get_http_parameters(r, conf);
   if ((ngx_strncmp(conf->request_type->data, "call", conf->request_type->len)) == 0) {
-    client_res = (u_char *)get_mrc_call_responce(conf, params);
+    client_res = (u_char *)get_mrc_call_responce(r, conf, params);
     client_res_len = ngx_strlen(client_res);
   } else if ((ngx_strncmp(conf->request_type->data, "notify", conf->request_type->len)) == 0) {
-    if(get_mrc_notify_responce(conf, params)) {
+    if(get_mrc_notify_responce(r, conf, params)) {
       // notify response error_log
       client_res = (u_char*)ngx_pcalloc(r->pool, sizeof((u_char*)"Fail") + 1);
       ngx_memset(client_res, '\0', sizeof((u_char*)"Fail") + 1);
