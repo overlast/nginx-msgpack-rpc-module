@@ -393,11 +393,14 @@ ngx_http_msgpack_rpc_client_handler(ngx_http_request_t *r)
   ngx_str_t** params;
   ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "testip:%s", conf->ip_address->data);
   ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "testport:%s", conf->port_number->data);
+  ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "testmethod_name:%s", conf->method_name->data);
+  ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "testmethod_name_len:%d", conf->method_name->len);
+  ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "testreqest_type:%s", conf->request_type->data);
   params = get_http_parameters(r, conf);
-  if ((ngx_strcmp(conf->request_type->data, "call")) == 0) {
+  if ((ngx_strncmp(conf->request_type->data, "call", conf->request_type->len)) == 0) {
     client_res = (u_char *)get_mrc_call_responce(conf, params);
     client_res_len = ngx_strlen(client_res);
-  } else if ((ngx_strcmp(conf->request_type->data, "notify")) == 0) {
+  } else if ((ngx_strncmp(conf->request_type->data, "notify", conf->request_type->len)) == 0) {
     if(get_mrc_notify_responce(conf, params)) {
       // notify response error_log
       client_res = (u_char*)ngx_pcalloc(r->pool, sizeof((u_char*)"Fail") + 1);
@@ -470,7 +473,7 @@ ngx_str_t* get_copy_ngx_str_t(ngx_conf_t *cf, ngx_str_t base) {
   target->len = base.len;
   target->data = (u_char*)ngx_pnalloc(cf->pool, target->len);
   ngx_memset(target->data, '\0', target->len);
-  ngx_sprintf(target->data, "%s", base.data);
+  ngx_snprintf(target->data, target->len, "%s", base.data);
   return target;
 }
 
@@ -491,6 +494,11 @@ ngx_http_msgpack_rpc_client_call(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     mrclcf->port_number = get_copy_ngx_str_t(cf, argv[2]);
     mrclcf->request_type = get_ngx_str_t(cf, request_type);
     mrclcf->method_name= get_copy_ngx_str_t(cf, argv[3]);
+    ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "method_name!!!!!!!!!!!!!!!!!!!!:%s", argv[3].data);
+    ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "method_name!!!!!!!!!!!!!!!!!!!!:%d", argv[3].len);
+    ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "method_name!!!!!!!!!!!!!!!!!!!!:%s", mrclcf->method_name->data);
+    ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "method_name!!!!!!!!!!!!!!!!!!!!:%d", mrclcf->method_name->len);
+
   } else if (args == 3) {
     mrclcf->ip_address = get_copy_ngx_str_t(cf, argv[1]);
     mrclcf->port_number = get_copy_ngx_str_t(cf, argv[2]);
