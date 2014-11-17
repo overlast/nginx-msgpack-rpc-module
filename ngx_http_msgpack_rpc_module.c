@@ -29,9 +29,7 @@ typedef struct {
   ngx_str_t *port_number;
   ngx_str_t *request_type;
   ngx_str_t *method_name;
-  //ngx_uint_t *param_indexes;
   ngx_int_t  param_num;
-  //ngx_uint_t  method_name_index;
 } ngx_http_msgpack_rpc_client_loc_conf_t;
 
 static void* ngx_http_msgpack_rpc_client_create_loc_conf(ngx_conf_t *cf);
@@ -124,63 +122,9 @@ ngx_str_t* variable_value_to_ngx_str_t(ngx_http_request_t *r, ngx_http_variable_
   return ngx_str;
 }
 
-/*
-
-// arg_を前につける
-ngx_int_t
-get_variable_param_indexes(ngx_conf_t *cf, ngx_uint_t *indexes) {
-  ngx_int_t max_index_num = 16;
-  indexes = (ngx_uint_t *)(ngx_pcalloc(cf->pool, sizeof(ngx_uint_t) * (max_index_num + 1)));
-  ngx_str_t *ngx_param_name_key;
-  ngx_int_t i = 1;
-  ngx_int_t tmp_index = -1;
-  ngx_int_t param_num = 0;
-  for (i = 1; i <= 16; i++) {
-    ngx_memset(request_type, '\0', request_type_len);
-    ngx_sprintf(request_type, "arg_a%d", i);
-    ngx_param_name_key = get_ngx_str_t(cf, request_type);
-    indexes[i] = ngx_http_get_variable_index(cf, ngx_param_name_key);
-    if (tmp_index == -1) {
-      break;
-    } else {
-      indexes[i] = (ngx_uint_t)tmp_index;
-      param_num++;
-    }
-  }
-return param_num;
-}
-
-//ngx_http_get_indexed_variable の返り値はngx_uint_tじゃないとおかしくね、、というバグは残っているのか
-ngx_str_t** get_http_parameters(ngx_http_request_t *r, ngx_http_msgpack_rpc_client_loc_conf_t *conf) {
-  ngx_int_t max_index_num = 16;
-  ngx_str_t** params = NULL;
-  ngx_int_t i = 0;
-  ngx_http_variable_value_t  *vvalue_method_name;
-  ngx_http_variable_value_t  *vvalue_param;
-
-  params = (ngx_str_t**)ngx_pcalloc(r->pool, sizeof(ngx_str_t*) * (max_index_num + 1));
-  if (conf->method_name == NULL) {
-    vvalue_method_name = ngx_http_get_indexed_variable(r, conf->method_name_index);
-    conf->method_name = variable_value_to_ngx_str_t(r, vvalue_method_name);
-  }
-  if ((conf->method_name != NULL) && (conf->param_num > 0)) {
-    for (i = 1; i <= (conf->param_num); i++) {
-
-      vvalue_param = ngx_http_get_indexed_variable(r, conf->param_indexes[i]);
-      params[i] = variable_value_to_ngx_str_t(r, vvalue_param);
-      if (params[i] == NULL) {
-        break;
-      }
-    }
-  }
-  return params;
-}
-
-*/
-
 ngx_str_t* get_ngx_str_t(ngx_conf_t *cf, u_char* str) {
   ngx_str_t *res = (ngx_str_t *)ngx_palloc(cf->pool, sizeof(ngx_str_t));
-  res->len = (size_t)(sizeof(str));
+  res->len = (size_t)(ngx_strlen(str));
   res->data = (u_char*)ngx_pnalloc(cf->pool, res->len);
   ngx_memset(res->data, '\0', res->len);
   ngx_sprintf(res->data, "%s", str);
@@ -207,7 +151,6 @@ u_char * ngx_str_t_to_u_char(ngx_http_request_t *r, ngx_str_t *src) {
   return dst;
 }
 
-
 u_char** get_http_parameters(ngx_http_request_t *r, ngx_http_msgpack_rpc_client_loc_conf_t *conf) {
   ngx_int_t max_index_num = 16;
   u_char** params = NULL;
@@ -220,9 +163,6 @@ u_char** get_http_parameters(ngx_http_request_t *r, ngx_http_msgpack_rpc_client_
   ngx_int_t request_type_len = 10;
   u_char* request_type = (u_char *)ngx_pcalloc(r->pool, sizeof(u_char) * request_type_len);
   params = (u_char**)ngx_pcalloc(r->pool, sizeof(u_char*) * (max_index_num + 1));
-  //params = (ngx_str_t**)ngx_pcalloc(r->pool, sizeof(ngx_str_t*) * (max_index_num + 1));
-  ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "testt_ip[%s", conf->ip_address->data);
-  ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "testt_method%s", conf->method_name->data);
 
   if (conf->method_name == NULL) {
     tmp_ngx_str = get_ngx_str_t_with_r(r, (u_char*)"arg_method_name");
@@ -232,26 +172,18 @@ u_char** get_http_parameters(ngx_http_request_t *r, ngx_http_msgpack_rpc_client_
   }
 
   if (conf->method_name != NULL) {
-
     for (i = 1; i <= max_index_num; i++) {
-      ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "!!!!!!!!!!");
       ngx_memset(request_type, '\0', request_type_len);
       ngx_sprintf(request_type, "arg_a%d", i);
       tmp_ngx_str = get_ngx_str_t_with_r(r, request_type);
-      ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "!!!!!!!!!!tmp_ngx_str->data:%s", tmp_ngx_str->data);
-      ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "!!!!!!!!!!tmp_ngx_str->len:%d", tmp_ngx_str->len);
       tmp_key_hash = ngx_hash_key(tmp_ngx_str->data, tmp_ngx_str->len);
-
       vvalue_param = ngx_http_get_variable(r, tmp_ngx_str, tmp_key_hash);
       tmp_param = variable_value_to_ngx_str_t(r, vvalue_param);
       if (tmp_param == NULL) {
         conf->param_num = i - 1;
         break;
       }
-      ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "qqqqqqq");
-
       params[i] = ngx_str_t_to_u_char(r, tmp_param);
-      ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "test params %d:%s", i, params[i]);
       conf->param_num = i;
     }
   }
@@ -425,17 +357,11 @@ ngx_http_msgpack_rpc_client_handler(ngx_http_request_t *r)
   conf = (ngx_http_msgpack_rpc_client_loc_conf_t *)ngx_http_get_module_loc_conf(r, ngx_http_msgpack_rpc_module);
   size_t client_res_len = 0;
   u_char** params;
-  ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "testip:%s", conf->ip_address->data);
-  ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "testport:%s", conf->port_number->data);
-  ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "testmethod_name:%s", conf->method_name->data);
-  ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "testmethod_name_len:%d", conf->method_name->len);
-  ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "testreqest_type:%s", conf->request_type->data);
   params = get_http_parameters(r, conf);
   if ((ngx_strncmp(conf->request_type->data, "call", conf->request_type->len)) == 0) {
     client_res = (u_char *)get_mrc_call_responce(r, conf, params);
     client_res_len = ngx_strlen(client_res);
     ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "testclient_res_len:%d", client_res_len);
-
   } else if ((ngx_strncmp(conf->request_type->data, "notify", conf->request_type->len)) == 0) {
     if(get_mrc_notify_responce(r, conf, params)) {
       // notify response error_log
@@ -492,18 +418,6 @@ ngx_http_msgpack_rpc_client_handler(ngx_http_request_t *r)
   return ngx_http_output_filter(r, &out);
 }
 
-
-
-/*
-void set_str_to_ngx_str_t(ngx_str_t *ngx_str, char* str) {
-  ngx_str->len = (size_t)(strlen(str));
-  ngx_str->data = (u_char*)ngx_pnalloc(cf->pool, ngx_str->len);
-  ngx_memset(ngx_str->data, '\0', BUFFER_SIZE);
-  ngx_sprintf(ngx_str->data, "%s", str);
-  return res;
-}
-*/
-
 ngx_str_t* get_copy_ngx_str_t(ngx_conf_t *cf, ngx_str_t base) {
   ngx_str_t *target = (ngx_str_t *)ngx_pnalloc(cf->pool, sizeof(ngx_str_t));
   target->len = base.len;
@@ -531,9 +445,6 @@ ngx_http_msgpack_rpc_client_call(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     mrclcf->request_type = get_ngx_str_t(cf, request_type);
     mrclcf->method_name= get_copy_ngx_str_t(cf, argv[3]);
     ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "method_name!!!!!!!!!!!!!!!!!!!!:%s", argv[3].data);
-    ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "method_name!!!!!!!!!!!!!!!!!!!!:%d", argv[3].len);
-    ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "method_name!!!!!!!!!!!!!!!!!!!!:%s", mrclcf->method_name->data);
-    ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "method_name!!!!!!!!!!!!!!!!!!!!:%d", mrclcf->method_name->len);
 
   } else if (args == 3) {
     mrclcf->ip_address = get_copy_ngx_str_t(cf, argv[1]);
