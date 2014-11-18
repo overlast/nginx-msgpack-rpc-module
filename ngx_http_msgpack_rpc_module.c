@@ -151,39 +151,46 @@ u_char * ngx_str_t_to_u_char(ngx_http_request_t *r, ngx_str_t *src) {
   return dst;
 }
 
+void url_unescape(u_char *escaped) {
+  u_char *dst = escaped;
+  u_char* src = escaped;
+  ngx_unescape_uri(&dst, &src, ngx_strlen(escaped), 0);
+  *dst = '\0';
+  return;
+}
+
+ngx_str_t * get_arg_ngx_str_t(ngx_http_request_t *r, u_char* query) {
+  ngx_str_t *tmp_ngx_str = get_ngx_str_t_with_r(r, query);
+  ngx_uint_t tmp_key_hash = ngx_hash_key(tmp_ngx_str->data, tmp_ngx_str->len);
+  ngx_http_variable_value_t *vvalue_arg = ngx_http_get_variable(r, tmp_ngx_str, tmp_key_hash);
+  ngx_str_t *res = variable_value_to_ngx_str_t(r, vvalue_arg);
+  return res;
+}
+
 u_char** get_http_parameters(ngx_http_request_t *r, ngx_http_msgpack_rpc_client_loc_conf_t *conf) {
   ngx_int_t max_index_num = 16;
-  u_char** params = NULL;
   ngx_int_t i = 0;
-  ngx_http_variable_value_t  *vvalue_method_name;
-  ngx_http_variable_value_t  *vvalue_param;
-  ngx_str_t *tmp_ngx_str;
   ngx_str_t *tmp_param;
-  ngx_uint_t tmp_key_hash = 0;
   ngx_int_t request_type_len = 10;
   u_char* request_type = (u_char *)ngx_pcalloc(r->pool, sizeof(u_char) * request_type_len);
-  params = (u_char**)ngx_pcalloc(r->pool, sizeof(u_char*) * (max_index_num + 1));
+  u_char** params = (u_char**)ngx_pcalloc(r->pool, sizeof(u_char*) * (max_index_num + 1));
+  //ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "unescaped!!!!%s", unescaped);
 
   if (conf->method_name == NULL) {
-    tmp_ngx_str = get_ngx_str_t_with_r(r, (u_char*)"arg_method_name");
-    tmp_key_hash = ngx_hash_key(tmp_ngx_str->data, tmp_ngx_str->len);
-    vvalue_method_name = ngx_http_get_variable(r, tmp_ngx_str, tmp_key_hash);
-    conf->method_name = variable_value_to_ngx_str_t(r, vvalue_method_name);
+    conf->method_name = get_arg_ngx_str_t(r, (u_char*)"arg_method_name");
   }
 
   if (conf->method_name != NULL) {
     for (i = 1; i <= max_index_num; i++) {
       ngx_memset(request_type, '\0', request_type_len);
       ngx_sprintf(request_type, "arg_a%d", i);
-      tmp_ngx_str = get_ngx_str_t_with_r(r, request_type);
-      tmp_key_hash = ngx_hash_key(tmp_ngx_str->data, tmp_ngx_str->len);
-      vvalue_param = ngx_http_get_variable(r, tmp_ngx_str, tmp_key_hash);
-      tmp_param = variable_value_to_ngx_str_t(r, vvalue_param);
+      tmp_param = get_arg_ngx_str_t(r, request_type);
       if (tmp_param == NULL) {
         conf->param_num = i - 1;
         break;
       }
       params[i] = ngx_str_t_to_u_char(r, tmp_param);
+      url_unescape(params[i]);
       conf->param_num = i;
     }
   }
@@ -444,8 +451,7 @@ ngx_http_msgpack_rpc_client_call(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     mrclcf->port_number = get_copy_ngx_str_t(cf, argv[2]);
     mrclcf->request_type = get_ngx_str_t(cf, request_type);
     mrclcf->method_name= get_copy_ngx_str_t(cf, argv[3]);
-    ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "method_name!!!!!!!!!!!!!!!!!!!!:%s", argv[3].data);
-
+    //ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "method_name!!!!!!!!!!!!!!!!!!!!:%s", argv[3].data);
   } else if (args == 3) {
     mrclcf->ip_address = get_copy_ngx_str_t(cf, argv[1]);
     mrclcf->port_number = get_copy_ngx_str_t(cf, argv[2]);
