@@ -209,7 +209,7 @@ mrclient* get_mrc_client(ngx_http_request_t *r, ngx_http_msgpack_rpc_client_loc_
 const char* get_mrc_call_responce(ngx_http_request_t *r, ngx_http_msgpack_rpc_client_loc_conf_t *conf, u_char** params) {
   mrclient* client = get_mrc_client(r, conf);
   u_char* method_name = ngx_str_t_to_u_char(r, conf->method_name);
-  ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "testmethod_name_in_mrc:%s", method_name);
+  //ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "testmethod_name_in_mrc:%s", method_name);
   const char* res;
   switch (conf->param_num) {
     case 0:
@@ -364,11 +364,19 @@ ngx_http_msgpack_rpc_client_handler(ngx_http_request_t *r)
   conf = (ngx_http_msgpack_rpc_client_loc_conf_t *)ngx_http_get_module_loc_conf(r, ngx_http_msgpack_rpc_module);
   size_t client_res_len = 0;
   u_char** params;
+  ngx_int_t retry = 0;
+  ngx_int_t max_retry = 3;
   params = get_http_parameters(r, conf);
   if ((ngx_strncmp(conf->request_type->data, "call", conf->request_type->len)) == 0) {
-    client_res = (u_char *)get_mrc_call_responce(r, conf, params);
-    client_res_len = ngx_strlen(client_res);
-    ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "testclient_res_len:%d", client_res_len);
+    while (client_res_len == 0) {
+      client_res = (u_char *)get_mrc_call_responce(r, conf, params);
+      client_res_len = ngx_strlen(client_res);
+      //ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "testclient_res_len:%d", client_res_len);
+      retry++;
+      if (retry > max_retry) {
+        break;
+      }
+    }
   } else if ((ngx_strncmp(conf->request_type->data, "notify", conf->request_type->len)) == 0) {
     if(get_mrc_notify_responce(r, conf, params)) {
       // notify response error_log
@@ -383,11 +391,9 @@ ngx_http_msgpack_rpc_client_handler(ngx_http_request_t *r)
       client_res_len = ngx_strlen(client_res);
     }
   } else {
-    ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "request_type_error");
+    //ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "request_type_error");
     // request_type error
   }
-
-  ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "test%d", client_res_len);
 
   // header設定
   r->headers_out.content_type.len = sizeof("text/plain") - 1;
@@ -420,7 +426,7 @@ ngx_http_msgpack_rpc_client_handler(ngx_http_request_t *r)
   if (rc == NGX_ERROR || rc > NGX_OK || r->header_only) {
     return rc;
   }
-  ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "Success! msgpack_rpc_client");
+  //ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "Success! msgpack_rpc_client");
 
   return ngx_http_output_filter(r, &out);
 }
