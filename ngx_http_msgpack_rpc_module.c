@@ -381,7 +381,6 @@ ngx_http_msgpack_rpc_client_handler(ngx_http_request_t *r)
     while (client_res_len == 0) {
       client_res = (u_char *)get_mrc_call_responce(r, conf, params);
       client_res_len = ngx_strlen(client_res);
-      //ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "testclient_res_len:%d", client_res_len);
       retry++;
       if (retry > max_retry) {
         break;
