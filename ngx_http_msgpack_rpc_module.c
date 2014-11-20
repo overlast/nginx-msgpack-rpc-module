@@ -151,6 +151,15 @@ u_char * ngx_str_t_to_u_char(ngx_http_request_t *r, ngx_str_t *src) {
   return dst;
 }
 
+u_char * char_to_u_char(ngx_http_request_t *r, char *src) {
+  u_char  *dst;
+  ngx_int_t dst_len = sizeof(u_char) * (strlen(src) + 1);
+  dst = (u_char*)ngx_pcalloc(r->pool, sizeof(u_char) * dst_len);
+  ngx_memset(dst, '\0', dst_len);
+  ngx_snprintf(dst, dst_len, "%s", (u_char*)src);
+  return dst;
+}
+
 void url_unescape(u_char *escaped) {
   u_char *dst = escaped;
   u_char* src = escaped;
@@ -174,7 +183,6 @@ u_char** get_http_parameters(ngx_http_request_t *r, ngx_http_msgpack_rpc_client_
   ngx_int_t request_type_len = 10;
   u_char* request_type = (u_char *)ngx_pcalloc(r->pool, sizeof(u_char) * request_type_len);
   u_char** params = (u_char**)ngx_pcalloc(r->pool, sizeof(u_char*) * (max_index_num + 1));
-  //ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "unescaped!!!!%s", unescaped);
 
   if (conf->method_name == NULL) {
     conf->method_name = get_arg_ngx_str_t(r, (u_char*)"arg_method_name");
@@ -209,7 +217,6 @@ mrclient* get_mrc_client(ngx_http_request_t *r, ngx_http_msgpack_rpc_client_loc_
 const char* get_mrc_call_responce(ngx_http_request_t *r, ngx_http_msgpack_rpc_client_loc_conf_t *conf, u_char** params) {
   mrclient* client = get_mrc_client(r, conf);
   u_char* method_name = ngx_str_t_to_u_char(r, conf->method_name);
-  //ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "testmethod_name_in_mrc:%s", method_name);
   const char* res;
   switch (conf->param_num) {
     case 0:
@@ -348,8 +355,10 @@ ngx_int_t get_mrc_notify_responce(ngx_http_request_t *r, ngx_http_msgpack_rpc_cl
       res = 0;
       break;
   }
+  mrc_flush_loop(client);
   return res;
 }
+
 
 static ngx_int_t
 ngx_http_msgpack_rpc_client_handler(ngx_http_request_t *r)
@@ -367,6 +376,7 @@ ngx_http_msgpack_rpc_client_handler(ngx_http_request_t *r)
   ngx_int_t retry = 0;
   ngx_int_t max_retry = 3;
   params = get_http_parameters(r, conf);
+
   if ((ngx_strncmp(conf->request_type->data, "call", conf->request_type->len)) == 0) {
     while (client_res_len == 0) {
       client_res = (u_char *)get_mrc_call_responce(r, conf, params);
@@ -380,14 +390,10 @@ ngx_http_msgpack_rpc_client_handler(ngx_http_request_t *r)
   } else if ((ngx_strncmp(conf->request_type->data, "notify", conf->request_type->len)) == 0) {
     if(get_mrc_notify_responce(r, conf, params)) {
       // notify response error_log
-      client_res = (u_char*)ngx_pcalloc(r->pool, sizeof((u_char*)"Fail") + 1);
-      ngx_memset(client_res, '\0', sizeof((u_char*)"Fail") + 1);
-      ngx_snprintf(client_res, sizeof((u_char*)"Fail"), "%s", (u_char*)"Fail");
+      client_res = char_to_u_char(r, "Fail");
       client_res_len = ngx_strlen(client_res);
     } else {
-      client_res = (u_char*)ngx_pcalloc(r->pool, sizeof((u_char*)"Success") + 1);
-      ngx_memset(client_res, '\0', sizeof((u_char*)"Success") + 1);
-      ngx_snprintf(client_res, sizeof((u_char*)"Success"), "%s", (u_char*)"Success");
+      client_res = char_to_u_char(r, "Success");
       client_res_len = ngx_strlen(client_res);
     }
   } else {
@@ -483,7 +489,7 @@ ngx_http_msgpack_rpc_client_notify(ngx_conf_t *cf, ngx_command_t *cmd, void *con
   ngx_http_core_loc_conf_t  *clcf;
 
   args = cf->args->nelts;
-  argv = (ngx_str_t *)cf->args->elts;
+  argv = cf->args->elts;
 
   if (args == 4) {
     mrclcf->ip_address = get_copy_ngx_str_t(cf, argv[1]);
