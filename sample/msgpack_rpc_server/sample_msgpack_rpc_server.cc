@@ -2,6 +2,10 @@
 
 using namespace std;
 
+//usage
+// g++ -g -Wall -O4  ./sample_msgpack_rpc_server.cc -o sample-msgpack-rpc-server -lmsgpack-rpc -lmpio -lmsgpack
+// ./sample-msgpack-rpc-server
+
 class myserver : public msgpack::rpc::server::base {
  public:
   myserver() {
