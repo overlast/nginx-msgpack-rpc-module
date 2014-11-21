@@ -40,7 +40,7 @@ while true;do
 done
 
 echo "${SCRIPT} cd to tmp dir"
-mkdir ${TMPDIR}
+mkdir -p ${TMPDIR}
 cd ${TMPDIR}
 
 wget http://nginx.org/download/${NGX_DIR_NAME}.tar.gz
