@@ -52,6 +52,8 @@ ${BASEDIR}/../bin/fix_makefile.pl ./objs/Makefile
 make
 sudo make install
 
+echo "${SCRIPT} nginx.conf is here => ${INSTALL_DIR}/conf/nginx.conf"
+echo ""
 echo "${SCRIPT} nginx with msgpack_rpc_module can start to exec =${INSTALL_DIR}/sbin/nginx"
 echo "Usage :"
 echo "  Start                     : ${INSTALL_DIR}/sbin/nginx"
