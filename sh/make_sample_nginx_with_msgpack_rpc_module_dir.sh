@@ -17,29 +17,29 @@ NGX_DIR=nginx-with-msgpack-rpc-module
 INSTALL_DIR=/usr/local/${NGX_DIR}
 
 while true;do
-    echo "${script} nginx will install to ${INSTALL_DIR}."
-    echo "${script} Type 'yes|y' or 'dir path which you want to install'."
+    echo "${SCRIPT} nginx will install to ${INSTALL_DIR}."
+    echo "${SCRIPT} Type 'yes|y' or 'dir path which you want to install'."
     read answer
     case $answer in
         yes)
-            echo -e "${script} [yes]\n"
-            echo -e "${script} nginx will install to ${INSTALL_DIR}.\n"
+            echo -e "${SCRIPT} [yes]\n"
+            echo -e "${SCRIPT} nginx will install to ${INSTALL_DIR}.\n"
             break
             ;;
         y)
-            echo -e "${script} [y]\n"
-            echo -e "${script} nginx will install to ${INSTALL_DIR}.\n"
+            echo -e "${SCRIPT} [y]\n"
+            echo -e "${SCRIPT} nginx will install to ${INSTALL_DIR}.\n"
             break
             ;;
         *)
-            echo -e "${script} [$answer]\n"
+            echo -e "${SCRIPT} [$answer]\n"
             INSTALL_DIR=$answer
-            echo -e "${script} instll dir is changed.\n"
+            echo -e "${SCRIPT} instll dir is changed.\n"
             ;;
     esac
 done
 
-echo "${script} cd to tmp dir"
+echo "${SCRIPT} cd to tmp dir"
 mkdir ${TMPDIR}
 cd ${TMPDIR}
 
@@ -51,3 +51,11 @@ cd ${NGX_DIR_NAME}
 ${BASEDIR}/../bin/fix_makefile.pl ./objs/Makefile
 make
 sudo make install
+
+echo "${SCRIPT} nginx with msgpack_rpc_module can start to exec =${INSTALL_DIR}/sbin/nginx"
+echo "Usage :"
+echo "  Start                     : ${INSTALL_DIR}/sbin/nginx"
+echo "  Stop                      : ${INSTALL_DIR}/sbin/nginx -s stop"
+echo "  Quit after fetch request  : ${INSTALL_DIR}/sbin/nginx -s quit"
+echo "  Reopen the logfiles       : ${INSTALL_DIR}/sbin/nginx -s reopen"
+echo "  Reload nginx.conf         : ${INSTALL_DIR}/sbin/nginx -s reloqd"
