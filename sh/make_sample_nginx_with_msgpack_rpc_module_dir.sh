@@ -2,7 +2,7 @@
 
 #!/usr/bin/env bash
 
-set -x # show executed commands
+#set -x # show executed commands
 set -e # die when an error will occur
 
 BASEDIR=`cd $(dirname $0); pwd`
@@ -40,6 +40,7 @@ while true;do
 done
 
 echo "${script} cd to tmp dir"
+mkdir ${TMPDIR}
 cd ${TMPDIR}
 
 wget http://nginx.org/download/${NGX_DIR_NAME}.tar.gz
