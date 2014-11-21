@@ -47,5 +47,6 @@ tar xfvz ./${NGX_DIR_NAME}.tar.gz
 cd ${NGX_DIR_NAME}
 
 ./configure --add-module=${BASEDIR}/../ --prefix=${INSTALL_DIR}
+${BASEDIR}/../bin/fix_makefile.pl ./objs/Makefile
 make
 sudo make install
