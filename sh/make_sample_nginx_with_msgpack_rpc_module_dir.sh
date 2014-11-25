@@ -39,6 +39,11 @@ while true;do
     esac
 done
 
+if [ ! -e /usr/local/lib/libmsgpack_rpc_client.so.0.0.1 ]; then
+    echo "$SCRIPT_NAME msgpack-rpc-c must be installed.."
+    $BASEDIR/../sh/make_centos_env.sh
+fi
+
 echo "${SCRIPT} cd to tmp dir"
 mkdir -p ${TMPDIR}
 cd ${TMPDIR}
