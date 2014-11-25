@@ -10,7 +10,7 @@ sudo pwd
 mkdir $TMP_DIR
 cd $TMP_DIR
 
-if [ -e /usr/local/lib/libmsgpack.so.4.0.0 ]; then
+if [ -e /usr/local/lib/libmsgpack.so.3.0.0 ] || [ -e /usr/local/lib/libmsgpack.so.4.0.0 ]; then
     echo "$SCRIPT_NAME msgpack-c is already installed.."
 else
     echo "$SCRIPT_NAME trying to install msgpack-c.."
@@ -36,6 +36,7 @@ else
     echo "$SCRIPT_NAME trying to install mpio.."
     git clone https://github.com/frsyuki/mpio.git
     cd mpio
+    sed  -i -e "s/ -rmpl / -r.\/mpl /g" ./preprocess
     ./bootstrap
     ./configure
     make
