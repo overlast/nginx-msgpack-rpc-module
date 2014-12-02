@@ -401,8 +401,8 @@ ngx_http_msgpack_rpc_client_handler(ngx_http_request_t *r)
   }
 
   // header設定
-  r->headers_out.content_type.len = sizeof("text/plain") - 1;
-  r->headers_out.content_type.data = (u_char *) "text/plain";
+  r->headers_out.content_type.len = sizeof("application/json") - 1;
+  r->headers_out.content_type.data = (u_char *) "application/json";
   r->headers_out.status = NGX_HTTP_OK;
   r->headers_out.content_length_n = client_res_len;
   if (r->method == NGX_HTTP_HEAD) {
