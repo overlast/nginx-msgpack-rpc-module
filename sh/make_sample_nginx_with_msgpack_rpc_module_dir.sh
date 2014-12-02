@@ -52,7 +52,10 @@ wget http://nginx.org/download/${NGX_DIR_NAME}.tar.gz
 tar xfvz ./${NGX_DIR_NAME}.tar.gz
 cd ${NGX_DIR_NAME}
 
-./configure --add-module=${BASEDIR}/../ --prefix=${INSTALL_DIR}
+git clone https://github.com/openresty/echo-nginx-module.git
+mv echo-nginx-module /tmp/echo-nginx-module
+
+./configure --add-module=/tmp/echo-nginx-module --add-module=${BASEDIR}/../ --prefix=${INSTALL_DIR}
 ${BASEDIR}/../bin/fix_makefile.pl ./objs/Makefile
 make
 sudo make install
