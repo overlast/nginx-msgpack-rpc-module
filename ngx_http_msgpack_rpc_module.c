@@ -375,16 +375,18 @@ ngx_http_msgpack_rpc_client_handler(ngx_http_request_t *r)
   u_char** params;
   ngx_int_t retry = 0;
   ngx_int_t max_retry = 3;
+  ngx_int_t retry_interval = 3;
   params = get_http_parameters(r, conf);
 
   if ((ngx_strncmp(conf->request_type->data, "call", conf->request_type->len)) == 0) {
     while (client_res_len == 0) {
       client_res = (u_char *)get_mrc_call_responce(r, conf, params);
       client_res_len = ngx_strlen(client_res);
-      retry++;
       if (retry > max_retry) {
         break;
       }
+      retry++;
+      ngx_sleep(retry_interval);
     }
   } else if ((ngx_strncmp(conf->request_type->data, "notify", conf->request_type->len)) == 0) {
     if(get_mrc_notify_responce(r, conf, params)) {
