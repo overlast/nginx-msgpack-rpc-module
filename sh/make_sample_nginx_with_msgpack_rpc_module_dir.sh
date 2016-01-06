@@ -116,12 +116,25 @@ echo "${SCRIPT} cd to tmp dir"
 mkdir -p ${TMPDIR}
 cd ${TMPDIR}
 
-wget http://nginx.org/download/${NGX_DIR_NAME}.tar.gz
-tar xfvz ./${NGX_DIR_NAME}.tar.gz
+if [ -d ./${NGX_DIR_NAME} ]; then
+    echo "$SCRIPT_NAME: ${NGX_DIR_NAME} is already there"
+else
+    if [ -f ./${NGX_DIR_NAME} ]; then
+        echo "$SCRIPT_NAME: ${NGX_DIR_NAME}.tar.gz is already there"
+    else
+        wget http://nginx.org/download/${NGX_DIR_NAME}.tar.gz
+    fi
+    tar xfvz ./${NGX_DIR_NAME}.tar.gz
+fi
+
 cd ${NGX_DIR_NAME}
 
-git clone https://github.com/openresty/echo-nginx-module.git
-mv echo-nginx-module /tmp/echo-nginx-module
+if [ -d /tmp/echo-nginx-module ]; then
+    echo "$SCRIPT_NAME: /tmp/echo-nginx-module is already there"
+else
+    git clone https://github.com/openresty/echo-nginx-module.git
+    mv echo-nginx-module /tmp/echo-nginx-module
+fi
 
 ./configure --add-module=/tmp/echo-nginx-module --add-module=${BASEDIR}/../ --prefix=${INSTALL_DIR}
 ${BASEDIR}/../bin/fix_makefile.pl ./objs/Makefile
