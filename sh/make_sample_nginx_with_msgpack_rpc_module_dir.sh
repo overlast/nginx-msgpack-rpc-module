@@ -10,7 +10,7 @@ USER_ID=`/usr/bin/id -u`
 SCRIPT="[make_sample_nginx] : "
 
 TMPDIR=/tmp/nginx-msgpack-rpc-tmp
-NGX_VERSION=1.6.2
+NGX_VERSION=1.8.0
 NGX_DIR_NAME=nginx-${NGX_VERSION}
 
 NGX_DIR=nginx-with-msgpack-rpc-module
